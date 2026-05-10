@@ -26,6 +26,10 @@ Buka Task Manager → Services → cari "ollama" → Restart
 ATAU restart laptop
 
 ollama pull qwen2.5:3b
+atau
+ollama pull qwen2.5:7b
+atau
+ollama pull deepseek-r1:8b (lebih cerdas & berat)
 
 # Cek model sudah terdownload
 ollama list
@@ -58,7 +62,7 @@ ipconfig
 # curl http://192.168.1.100:11434/api/tags
 
 
-# 4. Install Open WebUI (TIDAK WAJIB)
+# 4. Install Open WebUI
 pip install open-webui
 open-webui serve --host 0.0.0.0 --port 8080
 (tunggu aga lama)
@@ -68,6 +72,11 @@ open-webui serve --host 0.0.0.0 --port 8080
 
 
 # 5. Expose ke internet (Free)
+# Download cloudflared terlebih dahulu di PowerShell:
+New-Item -ItemType Directory -Force -Path C:\cloudflared
+Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile "C:\cloudflared\cloudflared.exe"
+
+# Jalankan tunnel
 C:\cloudflared\cloudflared.exe tunnel --protocol http2 --url http://localhost:11434 --no-autoupdate
 # Contoh: https://striking-worldwide-prepaid-distributed.trycloudflare.com/
 
