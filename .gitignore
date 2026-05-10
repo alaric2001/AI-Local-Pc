@@ -1,0 +1,9 @@
+# Secret keys - jangan pernah di-commit
+.webui_secret_key
+
+# Windows shortcuts
+*.lnk
+
+# Open WebUI data
+__pycache__/
+*.pyc

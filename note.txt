@@ -1,0 +1,80 @@
+Langkah langkah buat AI dgn PC sendiri hingga bisa akses publik 100% free
+
+*Path C:\cloudflared\cloudflared.exe bisa disesuaikan
+
+# 1. Install Ollama dari ollama.com
+# Setelah install, verifikasi
+ollama --version
+
+# Cek apakah service berjalan
+ollama list
+
+
+# 2. Set environment variable
+[System.Environment]::SetEnvironmentVariable("OLLAMA_HOST", "0.0.0.0:11434", "Machine")
+[System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS", "*", "Machine")
+
+Verifikasi setelah restart (di terminal):
+# Cek Ollama berjalan di semua interface
+netstat -an | findstr "11434"
+# Harus ada: 0.0.0.0:11434
+
+
+# 3. Restart, lalu download model
+# Restart Ollama service
+Buka Task Manager → Services → cari "ollama" → Restart
+ATAU restart laptop
+
+ollama pull qwen2.5:3b
+
+# Cek model sudah terdownload
+ollama list
+
+Buka PowerShell baru, test endpoint:
+# Test 1: API Ollama native
+Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -Method GET
+
+# Test 2: OpenAI-compatible endpoint (chat completions)
+$body = @{
+    model = "qwen2.5:3b"
+    messages = @(
+        @{role = "user"; content = "Halo, siapa kamu?"}
+    )
+    stream = $false
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod -Uri "http://localhost:11434/v1/chat/completions" `
+    -Method POST `
+    -ContentType "application/json" `
+    -Body $body
+
+# Test 3: Dari device lain di LAN (ganti IP dengan IP laptopmu)
+# Cek IP laptop dulu:
+ipconfig
+# Cari "IPv4 Address" di adapter WiFi/Ethernet
+# Contoh: 192.168.1.100
+
+# Dari device lain, test:
+# curl http://192.168.1.100:11434/api/tags
+
+
+# 4. Install Open WebUI (TIDAK WAJIB)
+pip install open-webui
+open-webui serve --host 0.0.0.0 --port 8080
+(tunggu aga lama)
+
+# Buka browser: http://localhost:8080
+# Pertama kali: buat akun
+
+
+# 5. Expose ke internet (Free)
+C:\cloudflared\cloudflared.exe tunnel --protocol http2 --url http://localhost:11434 --no-autoupdate
+# Contoh: https://striking-worldwide-prepaid-distributed.trycloudflare.com/
+
+atau
+# Ngrok 
+# Expose Ollama API
+ngrok http 11434
+
+# Expose Open WebUI
+ngrok http 8080
