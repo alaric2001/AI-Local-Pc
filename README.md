@@ -1,4 +1,4 @@
-# 🤖 AI Lokal — Chatbot di Laptop Sendiri
+# 🤖 AI Lokal di Laptop Sendiri
 
 > Jalankan AI chatbot di laptop Windows biasa, tanpa GPU, tanpa biaya. Bisa diakses dari LAN maupun internet publik.
 
