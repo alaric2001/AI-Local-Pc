@@ -2,7 +2,7 @@
 
 > Jalankan AI chatbot di laptop Windows biasa, tanpa GPU, tanpa biaya. Bisa diakses dari LAN maupun internet publik.
 
-**Spesifikasi yang dipakai:** Intel i5-5200U · 10GB RAM · CPU-only · Windows
+**Spesifikasi yang dipakai:** Windows
 
 ---
 
