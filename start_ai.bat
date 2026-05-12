@@ -14,7 +14,7 @@ timeout /t 5 /nobreak >nul
 
 REM --- Start Open WebUI ---
 echo [2/3] Starting Open WebUI...
-start "" cmd /k "set DATA_DIR=C:\webui && open-webui serve --host 0.0.0.0 --port 8080"
+start "" cmd /k "cd /d C:\webui && open-webui serve --host 0.0.0.0 --port 8080"
 timeout /t 3 /nobreak >nul
 
 REM --- Start Tunneling Service ---

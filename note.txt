@@ -37,6 +37,9 @@ ollama list
 Buka PowerShell baru, test endpoint:
 # Test 1: API Ollama native
 Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -Method GET
+atau
+Invoke-RestMethod -Uri "https://cube-judicial-amber.ngrok-free.dev/api/tags" -Method GET -Headers @{ "ngrok-skip-browser-warning"="true" }
+
 
 # Test 2: OpenAI-compatible endpoint (chat completions)
 $body = @{
