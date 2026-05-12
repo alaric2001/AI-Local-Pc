@@ -87,3 +87,17 @@ ngrok http 11434
 
 # Expose Open WebUI
 ngrok http 8080
+
+deploy cloudfire
+
+# C:\cloudflared\config.yml
+
+tunnel: (nama file .json)
+credentials-file: C:\Users\MyPc\.cloudflared\(nama file .json).json
+
+ingress:
+  - hostname: ai.domainmu.com
+    service: http://localhost:11434
+  - service: http_status:404
+
+cloudflared tunnel route dns ai-local ai.domainmu.com
