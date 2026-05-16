@@ -11,7 +11,7 @@
 - **100% Gratis** — tidak ada API key berbayar, tidak ada cloud
 - **Offline-ready** — jalan tanpa internet setelah model didownload
 - **API kompatibel OpenAI** — tinggal ganti base URL di app yang sudah pakai OpenAI
-- **Bisa diakses publik** — lewat Cloudflare Tunnel, gratis dan tanpa daftar akun
+- **URL publik permanen** — lewat ngrok static domain, tidak berubah meski restart
 - **Web UI bawaan** — Open WebUI mirip ChatGPT, langsung bisa dipakai
 
 ---
@@ -23,10 +23,11 @@ Internet / LAN
       │
       ▼
 ┌─────────────────────────────────────────┐
-│           Cloudflare Tunnel             │  ← URL publik otomatis
-│     https://xxxx.trycloudflare.com      │
+│               ngrok Tunnel              │  ← URL publik permanen
+│   https://cube-judicial-amber.ngrok-    │
+│              free.dev                   │
 └──────────────┬──────────────────────────┘
-               │ http2
+               │
                ▼
 ┌──────────────────────────┐
 │   Ollama  :11434         │  ← API kompatibel OpenAI
@@ -36,6 +37,7 @@ Internet / LAN
            ▼
 ┌──────────────────────────┐
 │   Open WebUI  :8080      │  ← Antarmuka web (mirip ChatGPT)
+│   Data dir: C:\webui     │
 └──────────────────────────┘
 ```
 
@@ -82,16 +84,23 @@ ollama pull deepseek-r1:8b
 
 ```powershell
 pip install open-webui
+New-Item -ItemType Directory -Force -Path C:\webui
 ```
 
-### 5. Install Cloudflare Tunnel
+> Semua data Open WebUI (database, secret key, uploads) disimpan di `C:\webui`.
+
+### 5. Install ngrok
+
+1. Download dari [ngrok.com/download](https://ngrok.com/download) (pilih Windows) dan ekstrak ke `C:\ngrok\`
+2. Tambahkan `C:\ngrok` ke system PATH
+3. Daftar akun gratis di [ngrok.com](https://ngrok.com), ambil authtoken dari dashboard
+4. Konfigurasi authtoken (sekali saja):
 
 ```powershell
-New-Item -ItemType Directory -Force -Path C:\cloudflared
-Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile "C:\cloudflared\cloudflared.exe"
+ngrok config add-authtoken <TOKEN-DARI-DASHBOARD>
 ```
 
-Tambahkan `C:\cloudflared` ke system PATH agar bisa dipakai dari mana saja.
+5. Di dashboard ngrok → **Cloud Edge → Domains** → ambil 1 static domain gratis
 
 ---
 
@@ -103,7 +112,7 @@ Tambahkan `C:\cloudflared` ke system PATH agar bisa dipakai dari mana saja.
 start_ai.bat
 ```
 
-Script ini otomatis menjalankan Ollama, Open WebUI, dan Cloudflare Tunnel sekaligus.
+Script ini otomatis menjalankan Ollama, Open WebUI, dan ngrok tunnel sekaligus.
 
 ### Manual (Terminal Terpisah)
 
@@ -112,15 +121,10 @@ REM Terminal 1 — Ollama
 "C:\Users\%USERNAME%\AppData\Local\Programs\Ollama\ollama.exe" serve
 
 REM Terminal 2 — Open WebUI
-open-webui serve --host 0.0.0.0 --port 8080
+cd /d C:\webui && open-webui serve --host 0.0.0.0 --port 8080
 
-REM Terminal 3 — Tunnel publik
-cloudflared tunnel --protocol http2 --url http://localhost:11434 --no-autoupdate
-```
-
-Setelah jalan, lihat di window cloudflared untuk URL publik seperti:
-```
-https://striking-worldwide-prepaid-distributed.trycloudflare.com
+REM Terminal 3 — ngrok tunnel (URL permanen)
+ngrok http --domain=cube-judicial-amber.ngrok-free.dev 11434
 ```
 
 ---
@@ -132,9 +136,9 @@ https://striking-worldwide-prepaid-distributed.trycloudflare.com
 | Web UI (lokal) | http://localhost:8080 |
 | Web UI (LAN) | http://\<IP-laptop\>:8080 |
 | API (lokal) | http://localhost:11434 |
-| API (publik) | URL dari window cloudflared |
+| API (publik) | https://cube-judicial-amber.ngrok-free.dev |
 
-> **Pertama kali buka Web UI:** buat akun di http://localhost:8080 — akun ini tersimpan lokal, bukan ke server mana pun.
+> **Pertama kali buka Web UI:** buat akun di http://localhost:8080 — akun ini tersimpan lokal di `C:\webui`, bukan ke server mana pun.
 
 Cari IP laptop untuk akses dari perangkat lain:
 ```powershell
@@ -183,7 +187,7 @@ GET  /api/tags              — Daftar model yang terinstall
 }
 ```
 
-> ⚠️ **Wajib `stream: true` saat pakai tunnel** — inferensi CPU yang lambat bisa membuat Cloudflare memutus koneksi sebelum model selesai menjawab.
+> ⚠️ **Gunakan `stream: true` saat pakai tunnel** — inferensi CPU yang lambat bisa menyebabkan koneksi timeout sebelum model selesai menjawab.
 
 ---
 
@@ -206,24 +210,12 @@ Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -Method GET
 
 | Masalah | Penyebab | Solusi |
 |---|---|---|
-| `cloudflared: not recognized` | Binary tidak ada di PATH | Tambahkan `C:\cloudflared` ke system PATH |
-| `timeout: no recent network activity` | Pakai protokol QUIC | Tambahkan `--protocol http2` ke perintah cloudflared |
-| `context canceled` di tunnel | Inferensi CPU terlalu lambat | Gunakan `stream: true` di semua API call |
+| `ngrok: not recognized` | Binary tidak ada di PATH | Tambahkan `C:\ngrok` ke system PATH |
+| ngrok error authtoken | Authtoken belum dikonfigurasi | Jalankan `ngrok config add-authtoken <token>` |
+| Domain ngrok tidak bisa diakses | Static domain belum terdaftar | Cek di dashboard ngrok → Domains |
+| `context canceled` / timeout | Inferensi CPU terlalu lambat | Gunakan `stream: true` di semua API call |
 | Ollama hanya bisa diakses dari localhost | Env var diset di user, bukan system | Set `OLLAMA_HOST` sebagai System env var, restart Ollama |
-
----
-
-## 🔄 Alternatif Tunnel
-
-Selain Cloudflare Tunnel, bisa juga pakai **ngrok**:
-
-```powershell
-# Expose Ollama API
-ngrok http 11434
-
-# Expose Open WebUI
-ngrok http 8080
-```
+| Open WebUI simpan file di tempat salah | Tidak jalan dari `C:\webui` | Pastikan perintah diawali `cd /d C:\webui` |
 
 ---
 
@@ -233,5 +225,5 @@ ngrok http 8080
 |---|---|---|
 | Python | 3.11 | Runtime Open WebUI |
 | Ollama | latest | AI runtime, CPU-only |
-| Open WebUI | latest | Web interface |
-| cloudflared | latest | Tunnel ke internet publik |
+| Open WebUI | latest | Web interface, data di `C:\webui` |
+| ngrok | latest | Tunnel ke internet publik, static domain |

@@ -11,19 +11,19 @@ Setup server AI chatbot lokal untuk laptop Windows spesifikasi rendah (Intel i5-
 | Komponen | Software | Port | Catatan |
 |---|---|---|---|
 | AI Runtime | Ollama | 11434 | CPU-only, tanpa GPU |
-| Antarmuka Web | Open WebUI | 8080 | `pip install open-webui` |
-| Tunnel Publik | Cloudflare Tunnel | — | Wajib `--protocol http2`, bukan QUIC |
+| Antarmuka Web | Open WebUI | 8080 | `pip install open-webui`, data dir di `C:\webui` |
+| Tunnel Publik | ngrok | — | Static domain `cube-judicial-amber.ngrok-free.dev`, binary di `C:\ngrok\ngrok.exe` |
 
 **Model default:** `qwen2.5:3b` (kuantisasi Q4_K_M, ~2GB RAM). Alternatif: `qwen2.5:7b`, `deepseek-r1:8b` (lebih berat).
 
 ## Menjalankan Stack
 
 ```bat
-REM Jalankan semua sekaligus (Ollama + Open WebUI + Cloudflare Tunnel)
+REM Jalankan semua sekaligus (Ollama + Open WebUI + ngrok)
 start_ai.bat
 ```
 
-`start_ai.bat` mengharapkan `cloudflared` ada di system PATH. Jika belum, tambahkan `C:\cloudflared` ke PATH atau gunakan full path `C:\cloudflared\cloudflared.exe`.
+`start_ai.bat` menjalankan ngrok dengan static domain. ngrok harus ada di system PATH (`C:\ngrok` sudah ditambahkan ke PATH).
 
 Manual di terminal terpisah:
 
@@ -31,14 +31,12 @@ Manual di terminal terpisah:
 REM 1. Ollama
 "C:\Users\%USERNAME%\AppData\Local\Programs\Ollama\ollama.exe" serve
 
-REM 2. Open WebUI (pertama kali: buat akun di http://localhost:8080)
-open-webui serve --host 0.0.0.0 --port 8080
+REM 2. Open WebUI — data dir wajib di C:\webui
+cd /d C:\webui && open-webui serve --host 0.0.0.0 --port 8080
 
-REM 3. Cloudflare Tunnel — http2 wajib agar tidak timeout
-cloudflared tunnel --protocol http2 --url http://localhost:11434 --no-autoupdate
+REM 3. ngrok dengan static domain
+ngrok http --domain=cube-judicial-amber.ngrok-free.dev 11434
 ```
-
-Alternatif tunnel: `ngrok http 11434` (atau `ngrok http 8080` untuk web UI).
 
 ## Perintah Verifikasi (PowerShell)
 
@@ -89,7 +87,7 @@ POST /v1/chat/completions   — Endpoint kompatibel OpenAI
 GET  /api/tags              — Daftar model tersedia
 ```
 
-Selalu gunakan `"stream": true` saat memanggil lewat Cloudflare Tunnel — inferensi CPU lambat menyebabkan Cloudflare membatalkan request non-streaming sebelum model selesai menjawab.
+Selalu gunakan `"stream": true` saat memanggil lewat tunnel — inferensi CPU lambat bisa menyebabkan koneksi timeout sebelum model selesai menjawab.
 
 ```json
 {
@@ -107,8 +105,9 @@ Selalu gunakan `"stream": true` saat memanggil lewat Cloudflare Tunnel — infer
 
 ## Masalah yang Diketahui & Solusinya
 
-- **`cloudflared: not recognized`** — binary ada di `C:\cloudflared\cloudflared.exe`; tambahkan `C:\cloudflared` ke system PATH atau gunakan full path.
-- **QUIC timeout** (`timeout: no recent network activity`) — selalu pakai `--protocol http2` saat menjalankan cloudflared.
-- **`context canceled` di tunnel** — inferensi CPU lambat melampaui idle timeout Cloudflare; gunakan `stream: true` di semua API call.
+- **`ngrok: not recognized`** — binary ada di `C:\ngrok\ngrok.exe`; tambahkan `C:\ngrok` ke system PATH.
+- **ngrok error `authtoken`** — jalankan `ngrok config add-authtoken <token>` sekali di PowerShell.
+- **ngrok domain tidak bisa diakses** — pastikan authtoken sudah dikonfigurasi dan static domain terdaftar di akun ngrok.
+- **`context canceled` / timeout di tunnel** — inferensi CPU lambat; gunakan `stream: true` di semua API call.
 - **Ollama hanya listen di localhost** — `OLLAMA_HOST=0.0.0.0:11434` harus diset sebagai system env var (bukan user), lalu restart service Ollama via Task Manager → Services.
-- **`.webui_secret_key`** — di-generate otomatis oleh Open WebUI saat pertama jalan; sudah di-gitignore, jangan di-commit.
+- **`.webui_secret_key` dan database Open WebUI** — disimpan di `C:\webui`; Open WebUI harus dijalankan dari direktori tersebut (`cd /d C:\webui`) agar tidak tercecer ke folder lain.
